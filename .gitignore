@@ -18,20 +18,17 @@ __pycache__/
 # Debug / temp artifacts
 debug_*.png
 *.log
+demo_output/
+
+# Recordings
+recordings/
 
 # OpenCode agent config & state
 .omo/
 
-# Graphify output
-graphify-out/
-.codegraph/
-
-# Training checkpoints
-models/checkpoint_epoch*.txt
-models/training_history*.png
+# Training data (large datasets regenerated from FER2013)
+data/
 
 # OS junk
 .DS_Store
 Thumbs.db
-"data/" 
-"data/" 

@@ -1,8 +1,79 @@
 # Facial Expression Recognition
 
+<p align="center">
+  <img src="docs/demo_screenshot.png" alt="Dashboard screenshot showing camera feed with face bounding box, emotion probability bars, history chart, and session statistics" width="748">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.8%2B-blue" alt="Python 3.8+">
+  <img src="https://img.shields.io/badge/opencv-4.5%2B-green" alt="OpenCV 4.5+">
+  <img src="https://img.shields.io/badge/mediapipe-0.10%2B-orange" alt="MediaPipe 0.10+">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey" alt="Platform">
+</p>
+
 Real-time 7-emotion classifier using **MediaPipe face detection** → **MobileNet CNN** → **Softmax Regression Calibrator**. Runs entirely on CPU at ~5 FPS.
 
 Detects: **angry · disgust · fear · happy · neutral · sad · surprise**
+
+---
+
+## Features
+
+- **Real-time webcam inference** — face detection + emotion classification at 5 FPS on CPU
+- **Softmax regression calibrator** — 7×7 weight matrix that reduces fear↔surprise confusion from 45% to 14%
+- **On-screen dashboard** — probability bars, 30-second emotion history chart, session statistics
+- **3-frame temporal smoothing** — prevents flickering between frames
+- **Video recording** — save sessions as MP4 + CSV emotion timeline
+- **Side-by-side mode** — raw camera next to dashboard
+- **No GPU required** — runs on any machine with a webcam
+
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [How It Works](#how-it-works--end-to-end)
+- [Performance](#performance)
+- [Project Structure](#project-structure)
+- [Technical Details](#technical-details)
+- [Requirements](#requirements)
+- [License](#license)
+- [Citation](#citation)
+
+---
+
+## Quick Start
+
+```bash
+# 1. Create environment
+python -m venv fer_face_env
+
+# 2. Activate
+fer_face_env\Scripts\activate
+
+# 3. Install dependencies
+pip install opencv-python mediapipe ai-edge-litert numpy
+
+# 4. Run
+fer_face_env\Scripts\python src\webcam_demo.py
+```
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| `q` | Quit |
+| `r` | Toggle recording (saves video + CSV with emotion timeline) |
+| `s` | Toggle side-by-side mode (raw camera vs dashboard) |
+
+### As a Python Module
+
+```python
+import sys; sys.path.insert(0, "src")
+from main import main
+main()
+```
 
 ---
 
@@ -52,7 +123,6 @@ The detected face region is:
 4. Passed to the model **as raw pixel values (0–255)** — no normalization is applied
 
 ```python
-# Simplified version of what happens:
 face_crop = frame[y1:y2, x1:x2]          # Crop to bounding box
 rgb = cv2.cvtColor(face_crop, cv2.COLOR_BGR2RGB)  # BGR → RGB
 input_tensor = cv2.resize(rgb, (224, 224))         # Scale to 224×224
@@ -66,7 +136,7 @@ The 224×224 RGB face is fed into a **MobileNet** convolutional neural network f
 ┌──── 224×224×3 RGB face ────┐
             │
      ┌──────▼──────┐
-     │  Conv Layer 1│──▶ Edge detection (horizontal/vertical lines, 
+     │  Conv Layer 1│──▶ Edge detection (horizontal/vertical lines,
      │  (3×3×32)    │    corners, color blobs)
      └──────────────┘
             │
@@ -142,7 +212,7 @@ Our test data showed:
 
 A simple per-class scale+bias can't fix confusion *between* emotions — it only amplifies or suppresses each emotion independently. We need something smarter.
 
-**Softmax regression** learns a **7×7 weight matrix** where every weight represents "how does emotion A's activation influence emotion B's final score?":
+**Softmax regression** learns a **7×7 weight matrix** where every weight represents "how does emotion A's activation influence emotion B's final score":
 
 ```ascii
                 Corrected scores
@@ -194,15 +264,15 @@ The calibrated probabilities go through a **3-frame rolling average**. This prev
 ### Per-Class Accuracy
 
 | Emotion   | Raw Model | Calibrated | Improvement |
-|-----------|-----------|------------|------------|
-| Surprise  | 40.6%     | **79.2%**  | **+38.5%** |
-| Sad       | 50.9%     | **63.0%**  | **+12.0%** |
-| Angry     | 43.8%     | **48.8%**  | +5.0%      |
-| Happy     | 80.0%     | **81.2%**  | +1.2%      |
-| Disgust   | 67.5%     | **67.5%**  | —          |
-| Neutral   | 52.5%     | **53.8%**  | +1.2%      |
-| Fear      | 44.8%     | 33.3%      | -11.5%     |
-| **Overall** | **53.5%** | **60.8%**  | **+7.3%** |
+|-----------|-----------|------------|-------------|
+| Surprise  | 40.6%     | **79.2%**  | **+38.5%**  |
+| Sad       | 50.9%     | **63.0%**  | **+12.0%**  |
+| Angry     | 43.8%     | **48.8%**  | +5.0%       |
+| Happy     | 80.0%     | **81.2%**  | +1.2%       |
+| Disgust   | 67.5%     | **67.5%**  | —           |
+| Neutral   | 52.5%     | **53.8%**  | +1.2%       |
+| Fear      | 44.8%     | 33.3%      | -11.5%      |
+| **Overall** | **53.5%** | **60.8%**  | **+7.3%**   |
 
 ### Confusion Matrix (Calibrated)
 
@@ -231,32 +301,6 @@ The calibrated probabilities go through a **3-frame rolling average**. This prev
 
 ---
 
-## Quick Demo
-
-```bash
-# 1. Create environment
-python -m venv fer_face_env
-
-# 2. Activate it
-fer_face_env\Scripts\activate
-
-# 3. Install dependencies
-pip install opencv-python mediapipe ai-edge-litert numpy
-
-# 4. Run
-fer_face_env\Scripts\python src\webcam_demo.py
-```
-
-### Controls
-
-| Key | Action |
-|-----|--------|
-| `q` | Quit |
-| `r` | Toggle recording (saves video + CSV with emotion timeline) |
-| `s` | Toggle side-by-side mode (raw camera vs dashboard) |
-
----
-
 ## Project Structure
 
 ```
@@ -277,6 +321,9 @@ facial-expression-recognition/
 │   ├── emotiefflib_mobilenet_7.tflite   # MobileNet CNN (AffectNet, 224×224)
 │   ├── calibrator.pkl                    # Softmax regression weights
 │   └── face_detection_short_range.tflite # MediaPipe BlazeFace model
+│
+├── docs/
+│   └── demo_screenshot.png        # Dashboard screenshot
 │
 ├── .gitignore
 └── README.md
@@ -391,4 +438,40 @@ The calibrator was trained on a CPU using pure NumPy (no TensorFlow required for
 
 ## License
 
-This project uses the **EmotiEffLib MobileNet** model from the [EmotiEffLib](https://github.com/sb-ai-lab/EmotiEffLib) research project by Samara University (sb-ai-lab). The model is pre-trained on VGGFace2 and fine-tuned on AffectNet. The calibration code and training scripts are original work.
+The source code in this repository is licensed under the **MIT License**.
+
+The **EmotiEffLib MobileNet** model (`models/emotiefflib_mobilenet_7.tflite`) is from the [EmotiEffLib](https://github.com/sb-ai-lab/EmotiEffLib) project by Samara University (sb-ai-lab), released under the **Apache 2.0 License**. The model is pre-trained on VGGFace2 and fine-tuned on AffectNet.
+
+MediaPipe face detection model (`models/face_detection_short_range.tflite`) is from Google, released under the **Apache 2.0 License**.
+
+---
+
+## Citation
+
+If you use this project in your work, please cite the underlying emotion recognition model:
+
+```bibtex
+@inproceedings{savchenko2023facial,
+  title     = {Facial Expression Recognition with Adaptive Frame Rate
+               based on Multiple Testing Correction},
+  author    = {Savchenko, Andrey V},
+  booktitle = {Proceedings of the 40th International Conference on
+               Machine Learning (ICML)},
+  pages     = {30119--30129},
+  year      = {2023},
+  volume    = {202},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR}
+}
+```
+
+This project uses the EmotiEffLib MobileNet model. The calibration code and training scripts are original work.
+
+---
+
+## Acknowledgments
+
+- **EmotiEffLib** (sb-ai-lab) — MobileNet emotion recognition model pre-trained on VGGFace2 and fine-tuned on AffectNet
+- **MediaPipe** (Google) — BlazeFace face detection model
+- **FER2013 dataset** — Training data for the calibrator
+- **AffectNet dataset** — Training data for the base emotion model
